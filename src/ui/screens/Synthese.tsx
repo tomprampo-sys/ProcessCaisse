@@ -6,6 +6,7 @@ import { formatEuros } from "../../domain/money";
 import type { Analyse, Comptage, MotifReinitialisation } from "../../domain/types";
 import { ChampMontant, Compteur, Montant } from "../components/Montant";
 import { naviguer } from "../navigation";
+import { ecrirePreference } from "../preferences";
 import { imprimer, MOTIFS_REINIT } from "../print/Documents";
 import { useStore } from "../store";
 
@@ -32,6 +33,8 @@ export function Synthese({ c, existe, analyse, s, modifier, ouvrirReinit }: Prop
   const [commentaireReinit, setCommentaireReinit] = useState("");
   const [erreurs, setErreurs] = useState<string[]>([]);
 
+  // Noms déjà utilisés dans l'historique, proposés pendant la saisie.
+  const noms = [...new Set(store.comptages.map((x) => x.comptePar?.trim()).filter((n): n is string => !!n))].sort((a, b) => a.localeCompare(b, "fr"));
   const billetsComptes = valeursBillets(true).filter((v) => (c.billets[v] || 0) > 0);
   const commentaireRequis = !reinit && s.horsTolerance && reglages.commentaireObligatoireSiEcart;
 
@@ -243,7 +246,22 @@ export function Synthese({ c, existe, analyse, s, modifier, ouvrirReinit }: Prop
       </label>
       <label className="champ">
         <span className="champ-label">Compté par</span>
-        <input type="text" value={c.comptePar ?? ""} disabled={verrouille} autoComplete="name" onChange={(e) => modifier({ comptePar: e.target.value })} />
+        <input
+          type="text"
+          list="noms-compte-par"
+          value={c.comptePar ?? ""}
+          disabled={verrouille}
+          autoComplete="off"
+          onChange={(e) => {
+            modifier({ comptePar: e.target.value });
+            ecrirePreference("comptePar", e.target.value.trim());
+          }}
+        />
+        <datalist id="noms-compte-par">
+          {noms.map((n) => (
+            <option key={n} value={n} />
+          ))}
+        </datalist>
       </label>
 
       {erreurs.length > 0 && (

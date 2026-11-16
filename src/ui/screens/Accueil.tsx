@@ -1,8 +1,12 @@
 import { fondLaisse } from "../../domain/calculs";
 import { aujourdHui, estOuvert, formatDate, formatJour, formatJourComplet } from "../../domain/calendrier";
 import { analyserComptage, comptageDeReference } from "../../domain/reference";
+import { useState } from "react";
 import { Montant } from "../components/Montant";
+import { useInstallation } from "../installation";
 import { naviguer } from "../navigation";
+import { lirePreference, sauvegardeEnRetard } from "../preferences";
+import { telechargerSauvegarde } from "../sauvegarde";
 import { useStore } from "../store";
 
 const MAX_JOURS_LISTES = 6;
@@ -17,6 +21,9 @@ export function Accueil({ date, setDate }: { date: string; setDate(d: string): v
   const reference = comptageDeReference(date, comptages);
   const cloture = comptage?.statut === "cloture";
   const manques = cloture ? [] : analyse.joursManques;
+  const installation = useInstallation();
+  const [derniereSauvegarde, setDerniereSauvegarde] = useState(() => lirePreference("derniereSauvegarde"));
+  const rappelSauvegarde = sauvegardeEnRetard(derniereSauvegarde, comptages.length, new Date());
 
   const statut = cloture ? "Clôturé" : comptage ? "Brouillon" : ouvert ? "À faire" : "Fermé";
   const classeStatut = cloture ? "ok" : comptage ? "info" : ouvert ? "alerte" : "";
@@ -119,6 +126,40 @@ export function Accueil({ date, setDate }: { date: string; setDate(d: string): v
           <button type="button" className="btn grand" onClick={() => naviguer("/historique")}>Historique</button>
           <button type="button" className="btn grand" onClick={() => naviguer("/reglages")}>Réglages</button>
         </nav>
+
+        {rappelSauvegarde && (
+          <div className="message alerte">
+            <p>
+              {derniereSauvegarde
+                ? "La dernière sauvegarde de cet appareil date de plus de 7 jours."
+                : "Aucune sauvegarde n'a encore été faite sur cet appareil."}{" "}
+              Les comptages n'existent qu'ici : gardez-en une copie.
+            </p>
+            <div className="actions">
+              <button
+                type="button"
+                className="btn"
+                onClick={() => {
+                  telechargerSauvegarde(store);
+                  setDerniereSauvegarde(lirePreference("derniereSauvegarde"));
+                }}
+              >
+                Télécharger une sauvegarde
+              </button>
+            </div>
+          </div>
+        )}
+
+        {!installation.installee && installation.proposable && (
+          <div className="message info">
+            <p>Installez l'application sur cet appareil : elle s'ouvre comme une appli et fonctionne sans connexion.</p>
+            <div className="actions">
+              <button type="button" className="btn primaire" onClick={() => installation.installer()}>
+                Installer l'application
+              </button>
+            </div>
+          </div>
+        )}
 
         {store.persistant === false && (
           <p className="message alerte">

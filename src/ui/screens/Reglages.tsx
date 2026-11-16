@@ -1,11 +1,12 @@
 import { useRef, useState } from "react";
 import { valeursBillets } from "../../domain/billets";
-import { JOURS_SEMAINE, aujourdHui, formatDate, formatJourComplet } from "../../domain/calendrier";
+import { JOURS_SEMAINE, formatDate, formatJourComplet } from "../../domain/calendrier";
 import { formatEuros } from "../../domain/money";
-import { telecharger } from "../../export/csv";
-import { creerSauvegarde, lireSauvegarde } from "../../storage/backup";
 import { ChampMontant, Compteur } from "../components/Montant";
+import { useInstallation } from "../installation";
 import { naviguer } from "../navigation";
+import { ecrirePreference } from "../preferences";
+import { lireFichierSauvegarde, telechargerSauvegarde } from "../sauvegarde";
 import { useStore } from "../store";
 
 // Affichage de la semaine à partir du lundi.
@@ -32,18 +33,16 @@ export function Reglages() {
     setMotif("");
   }
 
-  function sauvegarder() {
-    const json = creerSauvegarde({ reglages: r, comptages: store.comptages, joursFermes });
-    telecharger("sauvegarde_caisse_" + aujourdHui() + ".json", json, "application/json");
-  }
+  const installation = useInstallation();
 
   async function restaurer(f: File | undefined) {
     if (!f) return;
     try {
-      const donnees = lireSauvegarde(await f.text());
+      const donnees = await lireFichierSauvegarde(f);
       const question = "Restaurer cette sauvegarde (" + donnees.comptages.length + " comptages) ?\nToutes les données actuelles seront remplacées.";
       if (!window.confirm(question)) return;
       await store.restaurer(donnees);
+      ecrirePreference("derniereSauvegarde", new Date().toISOString());
       setMessage({ texte: "Sauvegarde restaurée : " + donnees.comptages.length + " comptages.", erreur: false });
     } catch (e) {
       setMessage({ texte: e instanceof Error ? e.message : "La restauration a échoué.", erreur: true });
@@ -56,7 +55,12 @@ export function Reglages() {
     if (!window.confirm("Effacer TOUTES les données (comptages, jours fermés, réglages) ?")) return;
     if (!window.confirm("Dernière confirmation : cette action est définitive. Avez-vous fait une sauvegarde ?")) return;
     await store.toutEffacer();
-    setMessage({ texte: "Toutes les données ont été effacées.", erreur: false });
+    // L'appareil redevient neuf : l'écran Bienvenue reviendra.
+    ecrirePreference("bienvenueVue", null);
+    ecrirePreference("derniereSauvegarde", null);
+    ecrirePreference("comptePar", null);
+    naviguer("/");
+    window.location.reload();
   }
 
   return (
@@ -211,12 +215,39 @@ export function Reglages() {
             {store.persistant === false && "Le stockage persistant a été refusé par le navigateur : sauvegardez régulièrement."}
           </p>
           <div className="actions">
-            <button type="button" className="btn primaire" onClick={sauvegarder}>Télécharger une sauvegarde</button>
+            <button type="button" className="btn primaire" onClick={() => telechargerSauvegarde(store)}>Télécharger une sauvegarde</button>
             <button type="button" className="btn" onClick={() => fichier.current?.click()}>Restaurer une sauvegarde…</button>
             <input ref={fichier} type="file" accept="application/json,.json" hidden onChange={(e) => restaurer(e.target.files?.[0])} />
             <button type="button" className="btn danger" onClick={toutEffacer}>Tout effacer</button>
           </div>
           {message && <p className={"message " + (message.erreur ? "erreur" : "ok")} role="status">{message.texte}</p>}
+          <p className="discret">
+            Pour utiliser l'application sur un autre appareil : téléchargez une sauvegarde ici, puis choisissez ce fichier au premier lancement sur l'autre appareil.
+          </p>
+        </section>
+
+        <section className="carte">
+          <h2>Cet appareil</h2>
+          <table className="calcul">
+            <tbody>
+              <tr><th scope="row">Version de l'application</th><td>{__APP_VERSION__}</td></tr>
+              <tr><th scope="row">Installée sur cet appareil</th><td>{installation.installee ? "Oui" : "Non"}</td></tr>
+              <tr>
+                <th scope="row">Stockage persistant</th>
+                <td>{store.persistant === true ? "Accordé" : store.persistant === false ? "Refusé" : "Inconnu"}</td>
+              </tr>
+            </tbody>
+          </table>
+          {!installation.installee && installation.proposable && (
+            <button type="button" className="btn primaire" onClick={() => installation.installer()}>Installer l'application</button>
+          )}
+          {!installation.installee && !installation.proposable && (
+            <p className="discret">
+              {installation.safari
+                ? "Pour l'installer avec Safari : bouton Partager, puis « Sur l'écran d'accueil » (iPad, iPhone) ou « Ajouter au Dock » (Mac)."
+                : "Pour l'installer : ouvrez le menu du navigateur, puis « Installer l'application » ou « Ajouter à l'écran d'accueil »."}
+            </p>
+          )}
         </section>
       </main>
     </div>

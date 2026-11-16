@@ -16,6 +16,20 @@ npm run preview  # servir le build de production
 
 Le dossier `dist/` est un site statique : il se dépose tel quel sur n'importe quel hébergement (les chemins sont relatifs).
 
+## Mettre en ligne
+
+Le workflow `.github/workflows/deploy.yml` teste, construit et publie l'application sur GitHub Pages à chaque push sur `main`.
+
+Une étape est à faire une seule fois dans le dépôt GitHub : **Settings → Pages → Source : « GitHub Actions »**. Tant qu'elle n'est pas faite, le workflow échoue à l'étape de publication.
+
+L'application est ensuite disponible à l'adresse `https://<compte>.github.io/ProcessCaisse/`. Le site publié ne contient que l'application, jamais les données de caisse. Attention : sur un compte GitHub gratuit, Pages n'est disponible que pour un dépôt public.
+
+## Installer sur une nouvelle machine
+
+Aucune installation technique : le salarié ouvre l'adresse, installe l'application depuis le navigateur, puis choisit au premier lancement de reprendre une sauvegarde ou de démarrer une nouvelle caisse. Le détail est dans [docs/GUIDE_SALARIES.md](docs/GUIDE_SALARIES.md).
+
+Les données ne sont pas partagées entre appareils : l'usage prévu est un appareil de caisse par restaurant, et le transfert se fait par le fichier de sauvegarde.
+
 ## Organisation du code
 
 ```

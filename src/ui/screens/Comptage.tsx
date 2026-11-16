@@ -11,6 +11,7 @@ import { ListeMouvements } from "../components/ListeMouvements";
 import { ListeTitres } from "../components/ListeTitres";
 import { ChampMontant, Compteur, Montant } from "../components/Montant";
 import { naviguer } from "../navigation";
+import { lirePreference } from "../preferences";
 import { ZoneImpression } from "../print/Documents";
 import { useStore } from "../store";
 import { Synthese } from "./Synthese";
@@ -41,7 +42,10 @@ function rapidesTR(comptages: TComptage[]): Cents[] {
 export function Comptage({ date, ouvrirReinit }: { date: string; ouvrirReinit: boolean }) {
   const store = useStore();
   const { reglages, comptages, calendrier } = store;
-  const [vierge] = useState(() => nouveauComptage(date));
+  const [vierge] = useState(() => {
+    const dernierNom = lirePreference("comptePar");
+    return dernierNom ? { ...nouveauComptage(date), comptePar: dernierNom } : nouveauComptage(date);
+  });
   const enregistre = comptages.find((x) => x.date === date);
   const existe = !!enregistre;
   const verrouille = enregistre?.statut === "cloture";
