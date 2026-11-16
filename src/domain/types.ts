@@ -40,8 +40,10 @@ export interface Comptage {
   sumUp: { date: string; montant: Cents }[];
   /** Renseigné si l'utilisateur saisit directement un total pour la période. */
   sumUpTotalSaisi?: Cents;
-  /** Billets laissés en caisse après pochette (les pièces restent toutes). */
+  /** Billets laissés en caisse après pochette. */
   billetsGardes: Record<number, number>;
+  /** Monnaie mise en pochette à la clôture (par défaut, toutes les pièces restent en caisse). */
+  monnaiePochette?: Cents;
   /** L'utilisateur a ajusté lui-même les billets gardés : la proposition n'est plus recalculée. */
   fondManuel?: boolean;
   /** « Pas de pochette aujourd'hui » : tout reste en caisse. */

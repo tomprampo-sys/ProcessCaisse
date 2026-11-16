@@ -4,7 +4,7 @@ import type { Synthese as TSynthese } from "../../domain/calculs";
 import { formatDate, formatJour } from "../../domain/calendrier";
 import { formatEuros } from "../../domain/money";
 import type { Analyse, Comptage, MotifReinitialisation } from "../../domain/types";
-import { Compteur, Montant } from "../components/Montant";
+import { ChampMontant, Compteur, Montant } from "../components/Montant";
 import { naviguer } from "../navigation";
 import { imprimer, MOTIFS_REINIT } from "../print/Documents";
 import { useStore } from "../store";
@@ -162,7 +162,10 @@ export function Synthese({ c, existe, analyse, s, modifier, ouvrirReinit }: Prop
 
       <h3>Fond de caisse et pochette</h3>
       <p className="discret">
-        La monnaie ({formatEuros(s.montantPieces)}) reste en caisse. Fond cible : {formatEuros(reglages.fondCible)}.
+        {s.monnaiePochette > 0
+          ? "Monnaie : " + formatEuros(s.montantPieces - s.monnaiePochette) + " restent en caisse, " + formatEuros(s.monnaiePochette) + " partent en pochette."
+          : "La monnaie (" + formatEuros(s.montantPieces) + ") reste en caisse."}{" "}
+        Fond cible : {formatEuros(reglages.fondCible)}.
       </p>
       {billetsComptes.length > 0 && (
         <table className="fond">
@@ -201,6 +204,12 @@ export function Synthese({ c, existe, analyse, s, modifier, ouvrirReinit }: Prop
           </tfoot>
         </table>
       )}
+      <ChampMontant
+        label="Monnaie mise en pochette (facultatif)"
+        valeur={c.monnaiePochette ?? null}
+        disabled={verrouille || !!c.pasDePochette}
+        onChange={(m) => modifier({ monnaiePochette: m ?? undefined })}
+      />
       {!c.pasDePochette && s.especesComptees < reglages.fondCible && s.especesComptees > 0 && (
         <p className="message alerte">Espèces comptées inférieures au fond cible : tout reste en caisse, pas de pochette.</p>
       )}
@@ -212,8 +221,8 @@ export function Synthese({ c, existe, analyse, s, modifier, ouvrirReinit }: Prop
           <input type="checkbox" checked={!!c.pasDePochette} disabled={verrouille} onChange={(e) => modifier({ pasDePochette: e.target.checked, fondManuel: false })} />
           Pas de pochette aujourd'hui
         </label>
-        {c.fondManuel && !verrouille && (
-          <button type="button" className="btn" onClick={() => modifier({ fondManuel: false, pasDePochette: false })}>
+        {(c.fondManuel || s.monnaiePochette > 0) && !verrouille && (
+          <button type="button" className="btn" onClick={() => modifier({ fondManuel: false, pasDePochette: false, monnaiePochette: undefined })}>
             Revenir à la proposition
           </button>
         )}

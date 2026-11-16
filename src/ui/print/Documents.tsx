@@ -174,6 +174,7 @@ function BordereauPochette({ comptage: c, synthese: s, reglages }: Props) {
       <TableBillets billets={s.pochette} valeurs={valeursBillets(true)} />
       <table className="doc-table">
         <tbody>
+          {s.monnaiePochette > 0 && <Ligne nom="Monnaie"><Montant cents={s.monnaiePochette} /></Ligne>}
           <Ligne nom="Total de la pochette" fort><Montant cents={s.totalPochette} /></Ligne>
         </tbody>
       </table>

@@ -5,9 +5,9 @@ export function especesComptees(c: Pick<Comptage, "montantPieces" | "billets">):
   return c.montantPieces + totalBillets(c.billets);
 }
 
-/** Fond laissé en caisse à la clôture : toutes les pièces + les billets gardés. */
-export function fondLaisse(c: Pick<Comptage, "montantPieces" | "billetsGardes">): Cents {
-  return c.montantPieces + totalBillets(c.billetsGardes);
+/** Fond laissé en caisse à la clôture : les pièces (moins la monnaie mise en pochette) + les billets gardés. */
+export function fondLaisse(c: Pick<Comptage, "montantPieces" | "billetsGardes" | "monnaiePochette">): Cents {
+  return c.montantPieces - (c.monnaiePochette ?? 0) + totalBillets(c.billetsGardes);
 }
 
 /** Billets partis en pochette à la clôture : comptés − gardés, par valeur. */
@@ -83,6 +83,8 @@ export interface Synthese {
   horsTolerance: boolean;
   fondLaisse: Cents;
   pochette: Record<number, number>;
+  /** Monnaie mise en pochette, en plus des billets. */
+  monnaiePochette: Cents;
   totalPochette: Cents;
   nbTR: number;
   totalTR: Cents;
@@ -123,6 +125,7 @@ export function calculerSynthese(c: Comptage, analyse: Analyse, tolerance: Cents
     horsTolerance: ecart != null && horsTolerance(ecart, tolerance),
     fondLaisse: fond,
     pochette: pochette(c),
+    monnaiePochette: c.monnaiePochette ?? 0,
     totalPochette: especes - fond,
     nbTR: c.titresRestaurant.length,
     totalTR,

@@ -148,27 +148,32 @@ export function bornerGardes(gardes: Record<number, number>, billets: Record<num
   return resultat;
 }
 
-type ChampsFond = Pick<Comptage, "montantPieces" | "billets" | "billetsGardes" | "fondManuel" | "pasDePochette">;
+type ChampsFond = Pick<
+  Comptage,
+  "montantPieces" | "billets" | "billetsGardes" | "fondManuel" | "pasDePochette" | "monnaiePochette"
+>;
 
 /**
  * Met à jour `billetsGardes` après une modification du comptage :
- * tout garder si « pas de pochette », sinon la proposition automatique,
+ * tout garder si « pas de pochette » (monnaie comprise), sinon la proposition automatique,
  * sauf si l'utilisateur a ajusté lui-même (auquel cas on borne seulement).
  */
 export function normaliserFond<T extends ChampsFond>(
   c: T,
   reglages: Pick<Reglages, "fondCible" | "compositionCibleBillets">,
 ): T {
+  // La monnaie mise en pochette ne peut pas dépasser la monnaie comptée.
+  const monnaie = c.pasDePochette ? 0 : Math.max(0, Math.min(c.monnaiePochette ?? 0, c.montantPieces));
   let billetsGardes: Record<number, number>;
   if (c.pasDePochette) billetsGardes = bornerGardes(c.billets, c.billets);
   else if (c.fondManuel) billetsGardes = bornerGardes(c.billetsGardes, c.billets);
   else {
     billetsGardes = proposerFond({
-      montantPieces: c.montantPieces,
+      montantPieces: c.montantPieces - monnaie,
       billets: c.billets,
       fondCible: reglages.fondCible,
       compositionCible: reglages.compositionCibleBillets,
     }).gardes;
   }
-  return { ...c, billetsGardes };
+  return { ...c, billetsGardes, monnaiePochette: monnaie > 0 ? monnaie : undefined };
 }

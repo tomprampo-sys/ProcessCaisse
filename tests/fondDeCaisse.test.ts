@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { totalBillets } from "../src/domain/billets";
+import { fondLaisse } from "../src/domain/calculs";
 import { normaliserFond, proposerFond } from "../src/domain/fondDeCaisse";
 
 const COMPOSITION = { 5: 6, 10: 8, 20: 5 };
@@ -95,6 +96,14 @@ describe("normaliserFond", () => {
 
   it("« pas de pochette » : tout reste en caisse", () => {
     expect(normaliserFond({ ...base, pasDePochette: true }, reglages).billetsGardes).toEqual(base.billets);
+  });
+
+  it("la monnaie mise en pochette sort du fond et est bornée à la monnaie comptée", () => {
+    const c = normaliserFond({ ...base, fondManuel: true, billetsGardes: { 20: 5 }, monnaiePochette: 49 }, reglages);
+    expect(c.monnaiePochette).toBe(49);
+    expect(fondLaisse(c)).toBe(5000 - 49 + 10000);
+    expect(normaliserFond({ ...base, monnaiePochette: 9999 }, reglages).monnaiePochette).toBe(5000);
+    expect(normaliserFond({ ...base, monnaiePochette: 49, pasDePochette: true }, reglages).monnaiePochette).toBeUndefined();
   });
 
   it("un ajustement manuel est conservé, borné au nombre de billets comptés", () => {

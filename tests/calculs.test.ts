@@ -95,6 +95,17 @@ describe("règles de calcul", () => {
     expect(s.statut).toBe("juste");
   });
 
+  it("la monnaie mise en pochette réduit aussi la référence du lendemain", () => {
+    // Cas du tableur : pochette de 130,49 € le 26/12 (130 € en billets + 0,49 € de monnaie)
+    const veille = comptage("2025-12-26", { montantPieces: 3304, billets: { 20: 15, 10: 13 }, billetsGardes: { 20: 10, 10: 10 }, monnaiePochette: 49 });
+    const jour = comptage("2025-12-27", { montantPieces: 3304, billets: { 50: 1, 20: 10, 10: 17, 5: 6 }, sumUp: [{ date: "2025-12-27", montant: 15090 }] });
+    const tous = [veille, jour];
+    expect(synthese("2025-12-26", tous).s.totalPochette).toBe(13049);
+    const { s } = synthese("2025-12-27", tous);
+    expect(s.reference).toBe(46304 - 13049);
+    expect(s.ecart).toBe(-41);
+  });
+
   it("un total SumUp saisi directement remplace le détail par jour", () => {
     const ref = comptage("2026-02-04");
     const jour = comptage("2026-02-07", {
